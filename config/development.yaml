@@ -1,0 +1,64 @@
+app:
+  name: "Event Manager"
+  version: "1.0.0"
+  debug: true
+  log_level: "DEBUG"
+
+# Database configurations
+database:
+  type: "sqlite"  # sqlite, mongodb, postgresql
+  
+  # SQLite config (for testing)
+  sqlite:
+    path: ":memory:"
+  
+  # MongoDB config
+  mongodb:
+    url: "mongodb://localhost:27017"
+    database: "event_manager_dev"
+    
+  # PostgreSQL config
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "event_manager_dev"
+    username: "postgres"
+    password: "postgres"
+    pool_size: 5
+    max_overflow: 10
+
+redis:
+  url: "redis://localhost:6379/0"
+  max_connections: 10
+
+kafka:
+  bootstrap_servers:
+    - "localhost:9092"
+  group_id: "event-manager-dev"
+  auto_offset_reset: "earliest"
+
+adapters:
+  http:
+    host: "0.0.0.0"
+    port: 8000
+    cors_enabled: true
+  
+  celery:
+    worker_concurrency: 2
+    task_time_limit: 300
+    task_soft_time_limit: 240
+  
+  kafka:
+    consumer_timeout_ms: 1000
+    max_poll_records: 100
+
+# External services
+external_services:
+  email:
+    provider: "mock"
+    api_key: "mock_key"
+  
+  payment_gateway:
+    provider: "mock"
+    api_key: "mock_key"
+    url: "https://mock-payment.example.com"

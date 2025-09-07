@@ -1,0 +1,61 @@
+# config/handlers.yaml
+handlers:
+  user.create:
+    handler: handlers.user.create_user.CreateUserHandler
+    config:
+      validation_enabled: true
+      auto_publish_events: true
+      timeout_seconds: 30
+  
+  user.update:
+    handler: handlers.user.update_user.UpdateUserHandler
+    config:
+      validation_enabled: true
+      auto_publish_events: true
+      timeout_seconds: 30
+  
+  payment.process:
+    handler: handlers.payment.process_payment.ProcessPaymentHandler
+    config:
+      validation_enabled: true
+      auto_publish_events: true
+      timeout_seconds: 60
+      retry_attempts: 3
+  
+  notification.send:
+    handler: handlers.notification.send_email.SendEmailHandler
+    config:
+      validation_enabled: true
+      timeout_seconds: 30
+      retry_attempts: 2
+
+queues:
+  user_events:
+    routing_key: user_events
+    handlers:
+      - user.create
+      - user.update
+  
+  payment_events:
+    routing_key: payment_events
+    handlers:
+      - payment.process
+  
+  notification_events:
+    routing_key: notification_events
+    handlers:
+      - notification.send
+
+topics:
+  user.events:
+    event_types:
+      - user.create
+      - user.update
+  
+  payment.events:
+    event_types:
+      - payment.process
+  
+  notification.events:
+    event_types:
+      - notification.send
