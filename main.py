@@ -203,11 +203,12 @@ class EventManagerApp:
             # Special case for HTTP-only mode
             if adapter_types == ["http"]:
                 http_adapter = next(a for a in self.adapters if isinstance(a, HTTPAdapter))
-                http_adapter.run(
+                await http_adapter.run(
                     host="0.0.0.0",
-                    port=8000,
+                    port=21346,
                     debug=self.config.debug
                 )
+                
             else:
                 # For other adapters, keep the main thread alive
                 while self.running:

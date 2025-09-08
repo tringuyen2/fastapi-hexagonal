@@ -124,15 +124,31 @@ class HTTPAdapter(BaseAdapter):
                 data=request
             ))
     
-    def run(self, host: str = "0.0.0.0", port: int = 8000, debug: bool = False):
-        """Run the HTTP server"""
-        if not self.app:
-            self.app = self._create_app()
+    # def run(self, host: str = "0.0.0.0", port: int = 8000, debug: bool = False):
+    #     """Run the HTTP server"""
+    #     if not self.app:
+    #         self.app = self._create_app()
         
-        uvicorn.run(
+    #     uvicorn.run(
+    #         self.app,
+    #         host=host,
+    #         port=port,
+    #         log_level="debug" if debug else "info",
+    #         reload=debug
+    #     )
+
+    async def run(self, host: str = "0.0.0.0", port: int = 8000, debug: bool = False):
+        """Start HTTP server"""
+        self.app = self._create_app()
+        logger.info(f"Starting HTTP server on {host}:{port}")
+        
+        config = uvicorn.Config(
             self.app,
             host=host,
             port=port,
             log_level="debug" if debug else "info",
             reload=debug
         )
+        self.server = uvicorn.Server(config)
+        logger.info("HTTP adapter started")
+        await self.server.serve()

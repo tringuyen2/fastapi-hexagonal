@@ -26,7 +26,7 @@ class UserModel(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
     age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    meta_data: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -37,7 +37,7 @@ class UserModel(Base):
             "name": self.name,
             "email": self.email,
             "age": self.age,
-            "metadata": self.metadata,
+            "meta_data": self.meta_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
@@ -55,7 +55,7 @@ class PaymentModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     payment_method: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     reference: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    meta_data: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -70,7 +70,7 @@ class PaymentModel(Base):
             "status": self.status,
             "payment_method": self.payment_method,
             "reference": self.reference,
-            "metadata": self.metadata,
+            "meta_data": self.meta_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }
@@ -88,7 +88,7 @@ class NotificationModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     template_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     message_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    meta_data: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -104,7 +104,7 @@ class NotificationModel(Base):
             "status": self.status,
             "template_id": self.template_id,
             "message_id": self.message_id,
-            "metadata": self.metadata,
+            "meta_data": self.meta_data,
             "sent_at": self.sent_at.isoformat() if self.sent_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
@@ -178,7 +178,7 @@ class PostgreSQLAdapter:
         """Create all tables"""
         try:
             async with self.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+                await conn.run_sync(Base.meta_data.create_all)
             logger.info("Created PostgreSQL tables")
             
         except Exception as e:
@@ -263,7 +263,7 @@ class PostgreSQLUserRepository(IUserRepository):
                 raise ServiceUnavailableException("PostgreSQL")
     
     async def create_payment(self, user_id: str, amount: float, currency: str,
-                           transaction_id: str, status: str, metadata: Dict[str, Any] = None) -> str:
+                           transaction_id: str, status: str, meta_data: Dict[str, Any] = None) -> str:
         """Create payment record"""
         payment_data = {
             "user_id": user_id,
@@ -271,7 +271,7 @@ class PostgreSQLUserRepository(IUserRepository):
             "currency": currency,
             "transaction_id": transaction_id,
             "status": status,
-            "metadata": metadata or {}
+            "meta_data": meta_data or {}
         }
         return await self.create(payment_data)
     
@@ -401,7 +401,7 @@ class PostgreSQLNotificationRepository(INotificationRepository):
                 raise ServiceUnavailableException("PostgreSQL")
     
     async def create_notification(self, recipient: str, subject: str, body: str,
-                                channel: str, status: str, metadata: Dict[str, Any] = None) -> str:
+                                channel: str, status: str, meta_data: Dict[str, Any] = None) -> str:
         """Create notification record"""
         notification_data = {
             "recipient": recipient,
@@ -409,7 +409,7 @@ class PostgreSQLNotificationRepository(INotificationRepository):
             "body": body,
             "channel": channel,
             "status": status,
-            "metadata": metadata or {}
+            "meta_data": meta_data or {}
         }
         return await self.create(notification_data)
     
@@ -514,13 +514,13 @@ class PostgreSQLNotificationRepository(INotificationRepository):
                 raise ServiceUnavailableException("PostgreSQL")
     
     async def create_user(self, name: str, email: str, age: Optional[int] = None,
-                         metadata: Dict[str, Any] = None) -> str:
+                         meta_data: Dict[str, Any] = None) -> str:
         """Create user with specific fields"""
         user_data = {
             "name": name,
             "email": email,
             "age": age,
-            "metadata": metadata or {}
+            "meta_data": meta_data or {}
         }
         return await self.create(user_data)
     

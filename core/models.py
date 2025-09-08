@@ -43,7 +43,7 @@ class HandlerResult(BaseModel):
 class UserCreateData(BaseModel):
     """User creation data model"""
     name: str = Field(..., min_length=1, max_length=100)
-    email: str = Field(..., regex=r'^[^@]+@[^@]+\.[^@]+$')
+    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
     age: Optional[int] = Field(None, ge=0, le=120)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
