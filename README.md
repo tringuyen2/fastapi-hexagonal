@@ -11,7 +11,7 @@ This project implements a true Hexagonal Architecture with clear separation of c
 - **Adapters Layer**: Input (HTTP, Kafka, Celery) and Output (Database, External APIs, Message Broker) adapters
 - **Core**: Dependency injection, configuration, and cross-cutting concerns
 
-![Architecture](images\hexagonal-architecture-diagram.jpg)
+![Architecture](https://github.com/tringuyen2/fastapi-hexagonal/blob/main/images/hexagonal-architecture-diagram.jpg)
 
 ## 🚀 Quick Start
 
