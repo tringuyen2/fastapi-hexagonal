@@ -1,0 +1,29 @@
+# config/environments/development.yaml
+app:
+  name: "FastAPI Hexagonal"
+  version: "1.0.0"
+  debug: true
+  log_level: "DEBUG"
+
+database:
+  type: "sqlite"  # or "postgresql", "mongodb"
+  pg_host: "localhost"
+  pg_port: 5432
+  pg_database: "fastapi_hexagonal_dev"
+  pg_username: "postgres"
+  pg_password: "postgres"
+
+redis:
+  url: "redis://localhost:6379/0"
+  max_connections: 10
+
+kafka:
+  bootstrap_servers:
+    - "localhost:9092"
+  group_id: "fastapi-hexagonal-dev"
+  auto_offset_reset: "earliest"
+
+external_services:
+  email_service_api_key: "mock_key"
+  payment_gateway_api_key: "mock_key"
+  payment_gateway_url: "https://mock-gateway.example.com"

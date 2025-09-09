@@ -1,102 +1,97 @@
-from typing import Dict, Type, Optional, Any
+# core/registry.py
+from typing import Dict, Any, Type, Optional, Callable
+from abc import ABC, abstractmethod
+from enum import Enum
 import importlib
-import pkgutil
-from pathlib import Path
+from loguru import logger
 
-from handlers.base import BaseHandler
-from core.models import EventType
-from core.exceptions import HandlerNotFoundException
-from core.dependency_injection import container
+from .di.container import container
+
+
+class HandlerType(Enum):
+    """Handler type enumeration"""
+    HTTP = "http"
+    KAFKA = "kafka" 
+    CELERY = "celery"
+
+
+class BaseHandler(ABC):
+    """Base handler interface"""
+    
+    @property
+    @abstractmethod
+    def handler_name(self) -> str:
+        """Handler name"""
+        pass
+    
+    @abstractmethod
+    async def handle(self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Handle request"""
+        pass
 
 
 class HandlerRegistry:
-    """Registry for managing event handlers"""
+    """Registry for managing handlers across different adapters"""
     
     def __init__(self):
-        self._handlers: Dict[EventType, Type[BaseHandler]] = {}
-        self._handler_configs: Dict[EventType, Dict[str, Any]] = {}
+        self._handlers: Dict[str, Dict[HandlerType, Type[BaseHandler]]] = {}
+        self._handler_configs: Dict[str, Dict[str, Any]] = {}
     
     def register_handler(
-        self, 
-        event_type: EventType, 
+        self,
+        operation: str,
+        handler_type: HandlerType,
         handler_class: Type[BaseHandler],
         config: Optional[Dict[str, Any]] = None
     ) -> None:
-        """Register a handler for an event type"""
-        self._handlers[event_type] = handler_class
-        self._handler_configs[event_type] = config or {}
+        """Register handler for operation and adapter type"""
+        if operation not in self._handlers:
+            self._handlers[operation] = {}
         
-        # Register handler in DI container
-        container.register_transient(handler_class, handler_class)
+        self._handlers[operation][handler_type] = handler_class
+        
+        # Store configuration
+        config_key = f"{operation}.{handler_type.value}"
+        self._handler_configs[config_key] = config or {}
+        
+        logger.debug(f"Registered handler: {operation}.{handler_type.value} -> {handler_class.__name__}")
     
-    def get_handler(self, event_type: EventType) -> BaseHandler:
-        """Get handler instance for event type"""
-        if event_type not in self._handlers:
-            raise HandlerNotFoundException(event_type.value)
+    def get_handler(self, operation: str, handler_type: HandlerType) -> BaseHandler:
+        """Get handler instance for operation and type"""
+        if operation not in self._handlers:
+            raise ValueError(f"No handlers registered for operation: {operation}")
         
-        handler_class = self._handlers[event_type]
+        if handler_type not in self._handlers[operation]:
+            raise ValueError(f"No {handler_type.value} handler registered for operation: {operation}")
+        
+        handler_class = self._handlers[operation][handler_type]
+        
+        # Create instance using DI container
         return container.get(handler_class)
     
-    def get_handler_config(self, event_type: EventType) -> Dict[str, Any]:
-        """Get configuration for handler"""
-        return self._handler_configs.get(event_type, {})
+    def get_handler_config(self, operation: str, handler_type: HandlerType) -> Dict[str, Any]:
+        """Get handler configuration"""
+        config_key = f"{operation}.{handler_type.value}"
+        return self._handler_configs.get(config_key, {})
     
-    def list_handlers(self) -> Dict[EventType, Type[BaseHandler]]:
-        """List all registered handlers"""
-        return self._handlers.copy()
+    def list_operations(self) -> Dict[str, list]:
+        """List all registered operations and their handler types"""
+        result = {}
+        for operation, handlers in self._handlers.items():
+            result[operation] = list(handlers.keys())
+        return result
     
-    def auto_discover_handlers(self, handlers_package: str = "handlers") -> None:
-        """Auto-discover handlers from handlers package"""
+    def auto_discover_handlers(self, package_name: str) -> None:
+        """Auto-discover handlers from package"""
         try:
-            # Import the handlers package
-            handlers_module = importlib.import_module(handlers_package)
-            handlers_path = Path(handlers_module.__file__).parent
+            package = importlib.import_module(package_name)
+            logger.debug(f"Auto-discovering handlers in {package_name}")
             
-            # Walk through all modules in handlers package
-            for _, module_name, _ in pkgutil.walk_packages([str(handlers_path)]):
-                full_module_name = f"{handlers_package}.{module_name}"
-                
-                try:
-                    module = importlib.import_module(full_module_name)
-                    
-                    # Find handler classes in module
-                    for attr_name in dir(module):
-                        attr = getattr(module, attr_name)
-                        
-                        if (isinstance(attr, type) and 
-                            issubclass(attr, BaseHandler) and 
-                            attr != BaseHandler):
-                            
-                            # Try to determine event type from handler
-                            event_type = self._get_event_type_from_handler(attr)
-                            if event_type:
-                                self.register_handler(event_type, attr)
-                                
-                except ImportError as e:
-                    logger.warning(f"Could not import handler module {full_module_name}: {e}")
-                    
+            # This would implement handler discovery logic
+            # For now, we'll rely on manual registration
+            
         except ImportError as e:
-            logger.error(f"Could not import handlers package {handlers_package}: {e}")
-    
-    def _get_event_type_from_handler(self, handler_class: Type[BaseHandler]) -> Optional[EventType]:
-        """Try to determine event type from handler class"""
-        # Check if handler has EVENT_TYPE class attribute
-        if hasattr(handler_class, 'EVENT_TYPE'):
-            return handler_class.EVENT_TYPE
-        
-        # Try to infer from class name
-        class_name = handler_class.__name__.lower()
-        
-        if 'createuser' in class_name or 'usercreate' in class_name:
-            return EventType.USER_CREATE
-        elif 'updateuser' in class_name or 'userupdate' in class_name:
-            return EventType.USER_UPDATE
-        elif 'processpayment' in class_name or 'paymentprocess' in class_name:
-            return EventType.PAYMENT_PROCESS
-        elif 'sendemail' in class_name or 'notification' in class_name:
-            return EventType.NOTIFICATION_SEND
-        
-        return None
+            logger.warning(f"Could not import package {package_name}: {e}")
 
 
 # Global registry instance
